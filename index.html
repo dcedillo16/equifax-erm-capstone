@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equifax ERM Capstone — Parts 5–9</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --amber: #d35400;
+    --gold: #b8860b;
+    --green: #1a6b3c;
+    --green-light: #27ae60;
+    --blue: #1a3a5c;
+    --blue-mid: #2980b9;
+    --gray: #7a7269;
+    --border: #c8c0b0;
+    --shadow: rgba(15,14,13,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid var(--red);
+  }
+  nav .brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    letter-spacing: 0.03em;
+  }
+  nav .brand span { color: var(--red-light); }
+  nav .tabs { display: flex; gap: 4px; }
+  nav .tab {
+    padding: 6px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aaa;
+    transition: all 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  nav .tab:hover { color: var(--paper); background: rgba(255,255,255,0.08); }
+  nav .tab.active { color: var(--ink); background: var(--paper); }
+
+  /* SECTIONS */
+  .section { display: none; padding: 32px; max-width: 1280px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .section-header .part-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    background: rgba(192,57,43,0.08);
+    padding: 3px 8px;
+    border: 1px solid rgba(192,57,43,0.3);
+    border-radius: 2px;
+  }
+  .section-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+  }
+  .section-header .deliverable {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--gray);
+    letter-spacing: 0.05em;
+  }
+
+  /* CARD */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--cream);
+  }
+
+  /* GRID LAYOUTS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+
+  /* ── PART 5: EXECUTIVE DASHBOARD ── */
+
+  .risk-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cream);
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-rank {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--border);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .risk-badge {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .risk-name { font-weight: 600; font-size: 12px; flex: 1; }
+  .risk-summary { font-size: 11px; color: var(--gray); flex: 2; }
+  .risk-score {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .trend {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+  }
+
+  /* HEAT MAP */
+  .heatmap {
+    position: relative;
+  }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 28px repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr) 28px;
+    gap: 3px;
+    aspect-ratio: 1.1;
+  }
+  .hm-cell {
+    border-radius: 3px;
+    position: relative;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    color: rgba(255,255,255,0.9);
+    cursor: default;
+    transition: transform 0.15s;
+  }
+  .hm-cell:hover { transform: scale(1.05); z-index: 5; }
+  .hm-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--gray);
+    font-weight: 600;
+  }
+  .hm-axis-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--gray);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hm-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--ink);
+    position: absolute;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .hm-low    { background: #d4edda; }
+  .hm-mod    { background: #fff3cd; }
+  .hm-high   { background: #f0a500; }
+  .hm-crit   { background: #c0392b; }
+  .hm-empty  { background: var(--cream); }
+
+  /* KRI TABLE */
+  .kri-table { width: 100%; border-collapse: collapse; }
+  .kri-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray);
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 2px solid var(--ink);
+    background: var(--cream);
+  }
+  .kri-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--cream);
+    vertical-align: middle;
+  }
+  .kri-table tr:hover td { background: #faf8f5; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .pill-red    { background: rgba(192,57,43,0.1); color: var(--red); }
+  .pill-amber  { background: rgba(211,84,0,0.1);  color: var(--amber); }
+  .pill-green  { background: rgba(26,107,60,0.1); color: var(--green); }
+
+  /* ── PART 6: GOVERNANCE ── */
+
+  .raci-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .raci-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .raci-table th:first-child { text-align: left; }
+  .raci-table td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+  }
+  .raci-table td:first-child { text-align: left; font-weight: 600; font-size: 11px; }
+  .raci-table tr:nth-child(even) td { background: #faf8f5; }
+  .raci-R { color: #c0392b; font-weight: 800; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .raci-A { color: var(--blue); font-weight: 800; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .raci-C { color: var(--amber); font-weight: 800; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .raci-I { color: var(--gray); font-weight: 600; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  .gov-node {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+  .gov-node .role {
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+  .gov-node .desc {
+    font-size: 10px;
+    color: var(--gray);
+  }
+  .gov-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--border);
+    font-size: 18px;
+  }
+
+  .gov-structure {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: center;
+  }
+  .gov-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  .gov-arrow {
+    text-align: center;
+    color: var(--gray);
+    font-size: 18px;
+    margin: 4px 0;
+  }
+
+  .escalation-step {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--cream);
+    align-items: flex-start;
+  }
+  .escalation-step:last-child { border-bottom: none; }
+  .esc-level {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
+    color: white;
+  }
+  .esc-content .esc-title { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+  .esc-content .esc-desc { font-size: 11px; color: var(--gray); }
+  .esc-content .esc-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--blue-mid);
+    margin-top: 2px;
+  }
+
+  /* ── PART 7: MATURITY MODEL ── */
+
+  .maturity-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cream);
+  }
+  .maturity-row:last-child { border-bottom: none; }
+  .maturity-dim { flex: 1.2; font-weight: 600; font-size: 12px; }
+  .maturity-bar-wrap { flex: 2; height: 14px; background: var(--cream); border-radius: 2px; overflow: hidden; }
+  .maturity-bar { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+  .maturity-score {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    width: 28px;
+    text-align: right;
+  }
+  .maturity-label {
+    font-size: 10px;
+    color: var(--gray);
+    width: 70px;
+    font-style: italic;
+  }
+  .maturity-gap { flex: 1.5; font-size: 10px; color: var(--red); }
+
+  .roadmap-item {
+    display: flex;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border);
+    align-items: flex-start;
+  }
+  .roadmap-item:last-child { border-bottom: none; }
+  .rm-month {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    width: 62px;
+    text-align: center;
+  }
+  .rm-text { font-size: 11px; }
+  .rm-owner { font-size: 10px; color: var(--gray); font-style: italic; }
+
+  /* ── PART 8: BEHAVIORAL ── */
+
+  .bias-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    border-left: 4px solid;
+  }
+  .bias-card .bias-name {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .bias-card .bias-def {
+    font-size: 11px;
+    color: var(--gray);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .bias-card .bias-equifax {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .culture-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cream);
+    align-items: flex-start;
+  }
+  .culture-item:last-child { border-bottom: none; }
+  .culture-icon {
+    font-size: 20px;
+    width: 32px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .culture-content .culture-title { font-weight: 700; font-size: 12px; }
+  .culture-content .culture-desc { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  .ethics-timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .ethics-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    padding: 8px 0 12px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  .timeline-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+    color: var(--gray);
+  }
+  .timeline-event { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+  .timeline-desc { font-size: 11px; color: var(--gray); }
+  .timeline-fail {
+    display: inline-block;
+    margin-top: 3px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+
+  /* ── PART 9: REFLECTION ── */
+
+  .reflection-block {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .reflection-block::before {
+    content: '"';
+    font-family: 'DM Serif Display', serif;
+    font-size: 120px;
+    color: rgba(15,14,13,0.04);
+    position: absolute;
+    top: -20px;
+    left: 10px;
+    line-height: 1;
+  }
+  .reflection-q {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    font-style: italic;
+    margin-bottom: 10px;
+    color: var(--blue);
+  }
+  .reflection-text {
+    font-size: 12px;
+    line-height: 1.8;
+    color: #333;
+  }
+  .reflection-prompt {
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--cream);
+    border-left: 3px solid var(--red);
+    font-size: 11px;
+    color: var(--gray);
+    font-style: italic;
+  }
+
+  .bias-self {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .bias-self-item {
+    padding: 12px;
+    background: var(--cream);
+    border-radius: 3px;
+    border-left: 3px solid;
+  }
+  .bias-self-item .bs-name { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+  .bias-self-item .bs-text { font-size: 11px; color: var(--gray); }
+
+  /* FOOTER STAMP */
+  .stamp {
+    margin-top: 20px;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: rgba(245,240,232,0.5);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 2px;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--gray);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .col-span-2, .col-span-3 { grid-column: span 1; }
+    nav .tabs { gap: 2px; }
+    nav .tab { padding: 5px 8px; font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">Equifax <span>ERM</span> Capstone</div>
+  <div class="tabs">
+    <div class="tab active" onclick="show('p5')">P5 Dashboard</div>
+    <div class="tab" onclick="show('p6')">P6 Governance</div>
+    <div class="tab" onclick="show('p7')">P7 Maturity</div>
+    <div class="tab" onclick="show('p8')">P8 Behavioral</div>
+    <div class="tab" onclick="show('p9')">P9 Reflection</div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     PART 5 — EXECUTIVE DASHBOARD
+═══════════════════════════════════════════════════ -->
+<section id="p5" class="section active">
+  <div class="section-header">
+    <span class="part-label">Part 5</span>
+    <h2>Risk Communication & Reporting</h2>
+    <span class="deliverable">Deliverable: Executive Dashboard</span>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="card" style="border-top:3px solid #c0392b;">
+      <div class="card-title">Critical Risks</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:#c0392b;line-height:1;">4</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px;">of 12 identified risks</div>
+    </div>
+    <div class="card" style="border-top:3px solid #d35400;">
+      <div class="card-title">KRIs Breached</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:#d35400;line-height:1;">7</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px;">threshold violations active</div>
+    </div>
+    <div class="card" style="border-top:3px solid #2980b9;">
+      <div class="card-title">Patch Backlog</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:#2980b9;line-height:1;">568</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px;">critical CVEs unpatched</div>
+    </div>
+    <div class="card" style="border-top:3px solid #1a6b3c;">
+      <div class="card-title">Risk Appetite</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:#1a6b3c;line-height:1;">2/5</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px;">domains within tolerance</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Top Risks -->
+    <div class="card">
+      <div class="card-title">Top 5 Enterprise Risks</div>
+      <div class="risk-item">
+        <span class="risk-rank">1</span>
+        <span class="risk-badge" style="background:#c0392b;"></span>
+        <span class="risk-name">Cyber / Patch Management</span>
+        <span class="risk-summary">Unpatched Apache Struts enables RCE; 76-day lag</span>
+        <span class="risk-score" style="background:rgba(192,57,43,0.1);color:#c0392b;">25</span>
+        <span class="trend">↑</span>
+      </div>
+      <div class="risk-item">
+        <span class="risk-rank">2</span>
+        <span class="risk-badge" style="background:#c0392b;"></span>
+        <span class="risk-name">Data Governance</span>
+        <span class="risk-summary">PII scattered across 50+ unsegmented systems</span>
+        <span class="risk-score" style="background:rgba(192,57,43,0.1);color:#c0392b;">25</span>
+        <span class="trend">↑</span>
+      </div>
+      <div class="risk-item">
+        <span class="risk-rank">3</span>
+        <span class="risk-badge" style="background:#f0a500;"></span>
+        <span class="risk-name">Third-Party Vendor Risk</span>
+        <span class="risk-summary">Limited oversight of 4,000+ vendor relationships</span>
+        <span class="risk-score" style="background:rgba(240,165,0,0.12);color:#b8700a;">20</span>
+        <span class="trend">→</span>
+      </div>
+      <div class="risk-item">
+        <span class="risk-rank">4</span>
+        <span class="risk-badge" style="background:#f0a500;"></span>
+        <span class="risk-name">Incident Response</span>
+        <span class="risk-summary">Delayed detection; 6-week gap before disclosure</span>
+        <span class="risk-score" style="background:rgba(240,165,0,0.12);color:#b8700a;">20</span>
+        <span class="trend">↑</span>
+      </div>
+      <div class="risk-item">
+        <span class="risk-rank">5</span>
+        <span class="risk-badge" style="background:#f0a500;"></span>
+        <span class="risk-name">Regulatory & Reputational</span>
+        <span class="risk-summary">FCRA/GDPR exposure; $700M+ settlement risk</span>
+        <span class="risk-score" style="background:rgba(240,165,0,0.12);color:#b8700a;">16</span>
+        <span class="trend">↑</span>
+      </div>
+      <div class="legend" style="margin-top:10px;">
+        <div class="legend-item"><div class="legend-dot" style="background:#c0392b;"></div> Critical (20–25)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0a500;"></div> High (15–19)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#27ae60;"></div> Moderate (≤14)</div>
+        <div class="legend-item">↑ Worsening &nbsp; → Stable</div>
+      </div>
+    </div>
+
+    <!-- Heat Map -->
+    <div class="card">
+      <div class="card-title">Risk Heat Map — Likelihood × Impact</div>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <!-- Y axis label -->
+        <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gray);letter-spacing:0.1em;text-transform:uppercase;align-self:center;margin-right:2px;">LIKELIHOOD →</div>
+
+        <div style="flex:1;">
+          <!-- Axis top -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);margin-bottom:3px;">
+            <div></div>
+            <div class="hm-axis-label" style="text-align:center;font-size:8px;">1</div>
+            <div class="hm-axis-label" style="text-align:center;font-size:8px;">2</div>
+            <div class="hm-axis-label" style="text-align:center;font-size:8px;">3</div>
+            <div class="hm-axis-label" style="text-align:center;font-size:8px;">4</div>
+            <div class="hm-axis-label" style="text-align:center;font-size:8px;">5</div>
+          </div>
+
+          <!-- Row 5 (highest likelihood) -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="hm-label">5</div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-high"></div>
+            <div class="hm-cell hm-crit" style="position:relative;"><div class="hm-dot">R1</div></div>
+            <div class="hm-cell hm-crit" style="position:relative;"><div class="hm-dot">R2</div></div>
+            <div class="hm-cell hm-crit"></div>
+          </div>
+          <!-- Row 4 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="hm-label">4</div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-high"></div>
+            <div class="hm-cell hm-crit" style="position:relative;"><div class="hm-dot">R4</div></div>
+            <div class="hm-cell hm-crit" style="position:relative;"><div class="hm-dot">R5</div></div>
+          </div>
+          <!-- Row 3 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="hm-label">3</div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-mod" style="position:relative;"><div class="hm-dot">R3</div></div>
+            <div class="hm-cell hm-high"></div>
+            <div class="hm-cell hm-high"></div>
+          </div>
+          <!-- Row 2 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="hm-label">2</div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-high"></div>
+          </div>
+          <!-- Row 1 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:6px;">
+            <div class="hm-label">1</div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-low"></div>
+            <div class="hm-cell hm-mod"></div>
+            <div class="hm-cell hm-mod"></div>
+          </div>
+          <div class="hm-axis-label" style="text-align:center;margin-bottom:3px;">← IMPACT →</div>
+        </div>
+      </div>
+      <div class="legend" style="margin-top:8px;">
+        <div class="legend-item"><div class="legend-dot" style="background:#d4edda;border:1px solid #bbb;"></div> Low</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fff3cd;border:1px solid #bbb;"></div> Moderate</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0a500;"></div> High</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c0392b;"></div> Critical</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KRI Table -->
+  <div class="card">
+    <div class="card-title">Key Risk Indicators (KRIs) — Status as of Breach Period</div>
+    <table class="kri-table">
+      <thead>
+        <tr>
+          <th>Risk Domain</th>
+          <th>KRI Metric</th>
+          <th>Threshold</th>
+          <th>Actual</th>
+          <th>Trend</th>
+          <th>Status</th>
+          <th>One-Line Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Cyber — Patch</strong></td>
+          <td>Days to patch critical CVE</td>
+          <td>≤ 30 days</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#c0392b;">76 days</td>
+          <td>↑</td>
+          <td><span class="status-pill pill-red">● BREACH</span></td>
+          <td style="font-size:10px;color:var(--gray);">Apache Struts patch ignored for 76 days despite public disclosure.</td>
+        </tr>
+        <tr>
+          <td><strong>Data Governance</strong></td>
+          <td>% PII assets in certified inventory</td>
+          <td>≥ 95%</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#c0392b;">~40%</td>
+          <td>↓</td>
+          <td><span class="status-pill pill-red">● BREACH</span></td>
+          <td style="font-size:10px;color:var(--gray);">Majority of PII-bearing systems untracked, enabling lateral movement.</td>
+        </tr>
+        <tr>
+          <td><strong>Network Monitoring</strong></td>
+          <td>% encrypted traffic inspected</td>
+          <td>≥ 90%</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#c0392b;">~15%</td>
+          <td>↓</td>
+          <td><span class="status-pill pill-red">● BREACH</span></td>
+          <td style="font-size:10px;color:var(--gray);">SSL inspection lapse allowed exfiltration to go undetected for 78 days.</td>
+        </tr>
+        <tr>
+          <td><strong>Incident Response</strong></td>
+          <td>Mean time to detect breach</td>
+          <td>≤ 24 hrs</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#c0392b;">78 days</td>
+          <td>↑</td>
+          <td><span class="status-pill pill-red">● BREACH</span></td>
+          <td style="font-size:10px;color:var(--gray);">Intrusion undetected; expired TLS cert masked monitoring capability.</td>
+        </tr>
+        <tr>
+          <td><strong>Third-Party Risk</strong></td>
+          <td>Vendors with completed risk assessments</td>
+          <td>≥ 80%</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#d35400;">52%</td>
+          <td>→</td>
+          <td><span class="status-pill pill-amber">▲ WARNING</span></td>
+          <td style="font-size:10px;color:var(--gray);">Vendor security posture unvalidated across critical data pipelines.</td>
+        </tr>
+        <tr>
+          <td><strong>Regulatory</strong></td>
+          <td>Open regulatory findings (days aged)</td>
+          <td>≤ 45 days</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#d35400;">120+ days</td>
+          <td>↑</td>
+          <td><span class="status-pill pill-amber">▲ WARNING</span></td>
+          <td style="font-size:10px;color:var(--gray);">Long-standing audit findings unresolved; regulators flagged systemic gaps.</td>
+        </tr>
+        <tr>
+          <td><strong>Security Training</strong></td>
+          <td>% staff completing annual security training</td>
+          <td>≥ 95%</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#1a6b3c;">97%</td>
+          <td>→</td>
+          <td><span class="status-pill pill-green">✓ OK</span></td>
+          <td style="font-size:10px;color:var(--gray);">Training compliance met; however depth and relevance remained inadequate.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stamp">
+    <span>Equifax ERM — Part 5 Executive Dashboard</span>
+    <span>Prepared for Board Risk Committee · Confidential</span>
+    <span>Ref: ERM-2017-Q2</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PART 6 — GOVERNANCE
+═══════════════════════════════════════════════════ -->
+<section id="p6" class="section">
+  <div class="section-header">
+    <span class="part-label">Part 6</span>
+    <h2>Monitoring & Governance</h2>
+    <span class="deliverable">Deliverable: Governance Map + KRI Set</span>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Governance Structure -->
+    <div class="card">
+      <div class="card-title">Proposed Governance Structure (Three Lines of Defense)</div>
+      <div class="gov-structure">
+        <div class="gov-row">
+          <div class="gov-node" style="border-color:#1a3a5c;border-width:2px;flex:1;">
+            <div class="role" style="color:#1a3a5c;">Board Risk Committee</div>
+            <div class="desc">Quarterly risk review · Sets risk appetite · Approves ERM policy</div>
+          </div>
+        </div>
+        <div class="gov-arrow">↓</div>
+        <div class="gov-row" style="gap:8px;">
+          <div class="gov-node" style="flex:1;">
+            <div class="role">CEO / C-Suite</div>
+            <div class="desc">Owns enterprise risk profile</div>
+          </div>
+          <div class="gov-node" style="flex:1;">
+            <div class="role" style="color:#c0392b;">Chief Risk Officer ★</div>
+            <div class="desc">Independent CRO (new role) — direct board access</div>
+          </div>
+          <div class="gov-node" style="flex:1;">
+            <div class="role">Chief Info Security Officer</div>
+            <div class="desc">Cyber risk program owner</div>
+          </div>
+        </div>
+        <div class="gov-arrow">↓</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gray);text-align:center;margin:2px 0;text-transform:uppercase;letter-spacing:0.08em;">2nd Line — Risk Oversight</div>
+        <div class="gov-row" style="gap:8px;">
+          <div class="gov-node" style="flex:1;background:#faf8f5;">
+            <div class="role" style="font-size:10px;">ERM Function</div>
+            <div class="desc">Risk identification, KRI monitoring</div>
+          </div>
+          <div class="gov-node" style="flex:1;background:#faf8f5;">
+            <div class="role" style="font-size:10px;">Compliance</div>
+            <div class="desc">Regulatory tracking & reporting</div>
+          </div>
+          <div class="gov-node" style="flex:1;background:#faf8f5;">
+            <div class="role" style="font-size:10px;">Cyber Risk Mgmt</div>
+            <div class="desc">Vulnerability mgmt, patch SLAs</div>
+          </div>
+        </div>
+        <div class="gov-arrow">↓</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gray);text-align:center;margin:2px 0;text-transform:uppercase;letter-spacing:0.08em;">1st Line — Business Operations</div>
+        <div class="gov-row" style="gap:8px;">
+          <div class="gov-node" style="flex:1;background:#f5f0e8;">
+            <div class="role" style="font-size:10px;">IT Operations</div>
+            <div class="desc">Patch execution, system hardening</div>
+          </div>
+          <div class="gov-node" style="flex:1;background:#f5f0e8;">
+            <div class="role" style="font-size:10px;">Business Units</div>
+            <div class="desc">Risk ownership within BU</div>
+          </div>
+          <div class="gov-node" style="flex:1;background:#f5f0e8;">
+            <div class="role" style="font-size:10px;">Data Management</div>
+            <div class="desc">PII inventory, data classification</div>
+          </div>
+        </div>
+        <div class="gov-arrow">↓</div>
+        <div class="gov-row">
+          <div class="gov-node" style="border-color:#1a6b3c;background:rgba(26,107,60,0.04);flex:1;">
+            <div class="role" style="color:#1a6b3c;font-size:10px;">3rd Line — Internal Audit</div>
+            <div class="desc">Independent assurance · Reports to Audit Committee</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--red);font-style:italic;">★ At the time of breach, no independent CRO existed — critical gap.</div>
+    </div>
+
+    <!-- Escalation Plan -->
+    <div class="card">
+      <div class="card-title">Monitoring & Escalation Plan</div>
+      <div class="escalation-step">
+        <div class="esc-level" style="background:#1a6b3c;">1</div>
+        <div class="esc-content">
+          <div class="esc-title">Continuous Automated Monitoring</div>
+          <div class="esc-desc">SIEM/SOAR tools monitor all KRIs in real-time. Automated alerts trigger on threshold breach. SSL certificate inventory auto-audited weekly.</div>
+          <div class="esc-time">Trigger: Any KRI exceeds yellow threshold · Response: Auto-ticket created</div>
+        </div>
+      </div>
+      <div class="escalation-step">
+        <div class="esc-level" style="background:#2980b9;">2</div>
+        <div class="esc-content">
+          <div class="esc-title">Team Lead / Security Operations</div>
+          <div class="esc-desc">SOC team reviews alert within 4 hours. Triage and assign severity. If unresolved within 24 hrs, escalate to Level 3.</div>
+          <div class="esc-time">Timeline: 4-hour acknowledgment · 24-hour triage SLA</div>
+        </div>
+      </div>
+      <div class="escalation-step">
+        <div class="esc-level" style="background:#f0a500;">3</div>
+        <div class="esc-content">
+          <div class="esc-title">CISO / CRO Notification</div>
+          <div class="esc-desc">Critical or red KRIs escalated to CISO and CRO within 24 hours. Formal risk memo issued. Patch or remediation plan required within 48 hours.</div>
+          <div class="esc-time">Timeline: 24-hr notification · 48-hr remediation plan</div>
+        </div>
+      </div>
+      <div class="escalation-step">
+        <div class="esc-level" style="background:#d35400;">4</div>
+        <div class="esc-content">
+          <div class="esc-title">Executive Risk Committee</div>
+          <div class="esc-desc">If risk exceeds risk appetite or remediation stalls, Risk Committee convenes within 72 hours. Resource allocation decision required. CEO briefed.</div>
+          <div class="esc-time">Timeline: 72-hr convening · CEO brief mandatory</div>
+        </div>
+      </div>
+      <div class="escalation-step">
+        <div class="esc-level" style="background:#c0392b;">5</div>
+        <div class="esc-content">
+          <div class="esc-title">Board Risk Committee + Regulatory Notification</div>
+          <div class="esc-desc">Board notified of critical breach within 72 hours of confirmation. Regulatory disclosure per FCRA/state law (72-hr or shorter windows). Incident Response team activated.</div>
+          <div class="esc-time">Timeline: Board ≤72 hrs · Regulatory ≤72 hrs · Public ≤7 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RACI Chart -->
+  <div class="card">
+    <div class="card-title">Revised RACI Chart — Key Risk & Control Activities</div>
+    <table class="raci-table">
+      <thead>
+        <tr>
+          <th style="width:220px;">Activity</th>
+          <th>Board / Audit Cmte</th>
+          <th>CEO</th>
+          <th>CRO</th>
+          <th>CISO</th>
+          <th>IT Ops</th>
+          <th>Legal/Compliance</th>
+          <th>Internal Audit</th>
+          <th>BU Owners</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Set Risk Appetite & Tolerance</td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-I">I</span></td>
+        </tr>
+        <tr>
+          <td>Patch Management Execution</td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+        </tr>
+        <tr>
+          <td>PII Data Inventory & Classification</td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-R">R</span></td>
+        </tr>
+        <tr>
+          <td>KRI Monitoring & Reporting</td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-I">I</span></td>
+        </tr>
+        <tr>
+          <td>Breach Detection & Response</td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-I">I</span></td>
+        </tr>
+        <tr>
+          <td>Regulatory Disclosure (Breach)</td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-I">I</span></td>
+        </tr>
+        <tr>
+          <td>Annual ERM Audit & Assessment</td>
+          <td><span class="raci-A">A</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-I">I</span></td>
+          <td><span class="raci-C">C</span></td>
+          <td><span class="raci-R">R</span></td>
+          <td><span class="raci-C">C</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;display:flex;gap:24px;flex-wrap:wrap;">
+      <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;"><span class="raci-R">R</span> Responsible</span>
+      <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;"><span class="raci-A">A</span> Accountable</span>
+      <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;"><span class="raci-C">C</span> Consulted</span>
+      <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;"><span class="raci-I">I</span> Informed</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PART 7 — ERM MATURITY
+═══════════════════════════════════════════════════ -->
+<section id="p7" class="section">
+  <div class="section-header">
+    <span class="part-label">Part 7</span>
+    <h2>ERM Maturity & Integration</h2>
+    <span class="deliverable">Deliverable: Maturity Model + 12-Month Roadmap</span>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Maturity Model -->
+    <div class="card">
+      <div class="card-title">ERM Maturity Assessment — Equifax 2017 (COSO/RIMS Framework)</div>
+      <div style="margin-bottom:10px;font-size:10px;color:var(--gray);font-style:italic;">Scale: 1 = Initial/Ad Hoc · 2 = Developing · 3 = Defined · 4 = Managed · 5 = Optimizing</div>
+
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Culture & Leadership</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:20%;background:#c0392b;"></div></div>
+        <div class="maturity-score" style="color:#c0392b;">1</div>
+        <div class="maturity-label">Initial</div>
+        <div class="maturity-gap">No CRO; risk tone from top absent</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Identification</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:40%;background:#d35400;"></div></div>
+        <div class="maturity-score" style="color:#d35400;">2</div>
+        <div class="maturity-label">Developing</div>
+        <div class="maturity-gap">Siloed; no enterprise view</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Assessment & Analysis</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:40%;background:#d35400;"></div></div>
+        <div class="maturity-score" style="color:#d35400;">2</div>
+        <div class="maturity-label">Developing</div>
+        <div class="maturity-gap">CVE severity underweighted</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Response & Controls</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:40%;background:#d35400;"></div></div>
+        <div class="maturity-score" style="color:#d35400;">2</div>
+        <div class="maturity-label">Developing</div>
+        <div class="maturity-gap">Patch SLAs undefined/unenforced</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Monitoring & KRIs</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:20%;background:#c0392b;"></div></div>
+        <div class="maturity-score" style="color:#c0392b;">1</div>
+        <div class="maturity-label">Initial</div>
+        <div class="maturity-gap">Expired SSL cert; no real-time alerts</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Risk Communication & Reporting</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:40%;background:#d35400;"></div></div>
+        <div class="maturity-score" style="color:#d35400;">2</div>
+        <div class="maturity-label">Developing</div>
+        <div class="maturity-gap">No executive dashboard; fragmented</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Governance & Accountability</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:20%;background:#c0392b;"></div></div>
+        <div class="maturity-score" style="color:#c0392b;">1</div>
+        <div class="maturity-label">Initial</div>
+        <div class="maturity-gap">RACI undefined; board not risk-informed</div>
+      </div>
+      <div class="maturity-row">
+        <div class="maturity-dim">Technology & Data Management</div>
+        <div class="maturity-bar-wrap"><div class="maturity-bar" style="width:40%;background:#d35400;"></div></div>
+        <div class="maturity-score" style="color:#d35400;">2</div>
+        <div class="maturity-label">Developing</div>
+        <div class="maturity-gap">50+ unsegmented systems; poor PII map</div>
+      </div>
+
+      <div style="margin-top:14px;padding:10px;background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.2);border-radius:3px;">
+        <strong style="font-size:11px;">Overall Maturity Score: 1.6 / 5</strong>
+        <span style="font-size:10px;color:var(--gray);margin-left:8px;">— "Developing/Initial" — Systemic ERM failure across all dimensions</span>
+      </div>
+    </div>
+
+    <!-- 12-Month Roadmap -->
+    <div class="card">
+      <div class="card-title">12-Month ERM Improvement Roadmap</div>
+      <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="legend-item"><div class="legend-dot" style="background:#c0392b;"></div> Q1 (Months 1–3)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d35400;"></div> Q2 (Months 4–6)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2980b9;"></div> Q3 (Months 7–9)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a6b3c;"></div> Q4 (Months 10–12)</div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#c0392b;">M1–M2</span>
+        <div><div class="rm-text"><strong>Appoint independent CRO</strong> with direct board access; establish Risk Committee charter</div><div class="rm-owner">Owner: CEO · Target: Maturity 3 in Governance</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#c0392b;">M1–M3</span>
+        <div><div class="rm-text"><strong>Critical patch SLA enforcement</strong>: mandate 30-day max for CVSS ≥7; automate patch tracking dashboard</div><div class="rm-owner">Owner: CISO / IT Ops · Target: Maturity 4 in Controls</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#c0392b;">M2–M3</span>
+        <div><div class="rm-text"><strong>PII data inventory sprint</strong>: classify all data assets; implement network segmentation for PII stores</div><div class="rm-owner">Owner: CRO / Data Mgmt · Target: Maturity 3 in Tech</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#d35400;">M4–M5</span>
+        <div><div class="rm-text"><strong>Deploy SIEM + SSL inspection</strong>: full TLS traffic visibility; automated certificate expiry alerts (30/60/90-day)</div><div class="rm-owner">Owner: CISO · Target: Maturity 4 in Monitoring</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#d35400;">M4–M6</span>
+        <div><div class="rm-text"><strong>Executive risk dashboard live</strong>: board-ready KRI reporting; monthly risk briefing cadence established</div><div class="rm-owner">Owner: CRO · Target: Maturity 4 in Communication</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#2980b9;">M7–M9</span>
+        <div><div class="rm-text"><strong>Enterprise risk assessment</strong>: cross-BU risk register; third-party vendor reassessment program launched</div><div class="rm-owner">Owner: ERM Team · Target: Maturity 3 in Identification</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#2980b9;">M7–M9</span>
+        <div><div class="rm-text"><strong>Risk culture program</strong>: board & exec risk training; risk KPIs embedded in performance management</div><div class="rm-owner">Owner: CEO / HR · Target: Maturity 3 in Culture</div></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="rm-month" style="background:#1a6b3c;">M10–M12</span>
+        <div><div class="rm-text"><strong>ERM maturity reassessment</strong> + tabletop breach simulation; close audit gaps; publish updated risk appetite statement</div><div class="rm-owner">Owner: Internal Audit + CRO · Target: Overall Maturity ≥ 3.5</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PART 8 — BEHAVIORAL & ETHICAL
+═══════════════════════════════════════════════════ -->
+<section id="p8" class="section">
+  <div class="section-header">
+    <span class="part-label">Part 8</span>
+    <h2>Behavioral & Ethical Analysis</h2>
+    <span class="deliverable">Deliverable: Behavioral-Ethical Analysis</span>
+  </div>
+
+  <!-- Cognitive Biases -->
+  <div style="margin-bottom:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray);margin-bottom:12px;">Cognitive Biases at Work</div>
+    <div class="grid-3">
+      <div class="bias-card" style="border-left-color:#c0392b;">
+        <div class="bias-name">Normalcy Bias</div>
+        <div class="bias-def">"The tendency to underestimate the likelihood and impact of disasters."</div>
+        <div class="bias-equifax">Equifax leadership treated the Apache Struts vulnerability as routine — one of thousands of patches in the backlog. Because a major breach had never occurred before, decision-makers systematically underweighted the probability that this specific, well-publicized CVE would be exploited. The 76-day delay was a product of cognitive comfort with the status quo, not a rational risk calculation.</div>
+      </div>
+      <div class="bias-card" style="border-left-color:#d35400;">
+        <div class="bias-name">Overconfidence Bias</div>
+        <div class="bias-def">"Excessive belief in one's own capabilities relative to objective evidence."</div>
+        <div class="bias-equifax">Executives expressed confidence in security posture even as internal audits flagged critical gaps. Equifax's status as a trusted custodian of national financial data reinforced a belief that existing controls were sufficient. This overconfidence led to underinvestment in security tooling, delayed remediation, and dismissal of risk signals that should have prompted immediate action.</div>
+      </div>
+      <div class="bias-card" style="border-left-color:#2980b9;">
+        <div class="bias-name">Diffusion of Responsibility</div>
+        <div class="bias-def">"When accountability is spread across many actors, no single actor takes ownership."</div>
+        <div class="bias-equifax">With no independent CRO and siloed IT teams, patch accountability fell into a gray zone between IT operations, security teams, and business owners. The scan that identified the Apache Struts vulnerability was sent to a distribution list — no individual was assigned ownership. This organizational diffusion meant that even after discovery, no one acted with urgency.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Cultural Dynamics -->
+    <div class="card">
+      <div class="card-title">Cultural Dynamics</div>
+      <div class="culture-item">
+        <div class="culture-icon">🧱</div>
+        <div class="culture-content">
+          <div class="culture-title">Organizational Siloing</div>
+          <div class="culture-desc">Security, IT, legal, and business units operated with minimal cross-functional communication. The vulnerability notification never reached the team responsible for the vulnerable system. Siloed communication is both a structural and cultural failure — structures enable siloing, but culture normalizes it.</div>
+        </div>
+      </div>
+      <div class="culture-item">
+        <div class="culture-icon">💸</div>
+        <div class="culture-content">
+          <div class="culture-title">Chronic Underfunding of Security</div>
+          <div class="culture-desc">Despite managing PII of hundreds of millions of Americans, Equifax's cybersecurity investment as a share of IT budget was significantly below industry peers. Security was treated as a cost center rather than a risk management function — a cultural signal that risk was not a strategic priority.</div>
+        </div>
+      </div>
+      <div class="culture-item">
+        <div class="culture-icon">🚒</div>
+        <div class="culture-content">
+          <div class="culture-title">Firefighting vs. Proactive Risk Management</div>
+          <div class="culture-desc">IT and security teams were perpetually reactive — responding to incidents rather than preventing them. The patch backlog grew because resources were consumed addressing active outages. This "firefighting culture" made systematic vulnerability management structurally impossible and was reinforced by leadership KPIs that rewarded uptime over risk reduction.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ethics Timeline -->
+    <div class="card">
+      <div class="card-title">Ethical Failures — Timeline of Disclosure</div>
+      <div class="ethics-timeline">
+        <div class="timeline-item">
+          <div style="position:absolute;left:-24px;top:12px;width:10px;height:10px;border-radius:50%;background:#c0392b;border:2px solid white;"></div>
+          <div class="timeline-date">MAY 13, 2017</div>
+          <div class="timeline-event">Vulnerability Identified (CVE-2017-5638)</div>
+          <div class="timeline-desc">US-CERT alerts published. Equifax's security scanner detects the Apache Struts exposure. Email sent to distribution list — no action taken.</div>
+          <div><span class="timeline-fail" style="background:rgba(192,57,43,0.1);color:#c0392b;">Failure: No ownership assigned; normalcy bias invoked</span></div>
+        </div>
+        <div class="timeline-item">
+          <div style="position:absolute;left:-24px;top:12px;width:10px;height:10px;border-radius:50%;background:#c0392b;border:2px solid white;"></div>
+          <div class="timeline-date">MAY–JUL 2017</div>
+          <div class="timeline-event">Active Exfiltration (78 Days Undetected)</div>
+          <div class="timeline-desc">Attackers exfiltrate 147 million records. Expired TLS certificate prevents SSL inspection. No alerts triggered. No human review of anomalous traffic.</div>
+          <div><span class="timeline-fail" style="background:rgba(192,57,43,0.1);color:#c0392b;">Failure: Monitoring breakdown; systemic control failure</span></div>
+        </div>
+        <div class="timeline-item">
+          <div style="position:absolute;left:-24px;top:12px;width:10px;height:10px;border-radius:50%;background:#d35400;border:2px solid white;"></div>
+          <div class="timeline-date">JUL 29, 2017</div>
+          <div class="timeline-event">Breach Discovered Internally</div>
+          <div class="timeline-desc">Suspicious activity detected after SSL cert renewal restores inspection capability. Forensics initiated. Board and regulators NOT immediately notified.</div>
+          <div><span class="timeline-fail" style="background:rgba(211,84,0,0.1);color:#d35400;">Failure: Disclosure delayed 40 days — ethically indefensible</span></div>
+        </div>
+        <div class="timeline-item">
+          <div style="position:absolute;left:-24px;top:12px;width:10px;height:10px;border-radius:50%;background:#d35400;border:2px solid white;"></div>
+          <div class="timeline-date">AUG 2017</div>
+          <div class="timeline-event">Executives Sell Stock</div>
+          <div class="timeline-desc">Three senior executives sell ~$1.8M in stock before public disclosure. DOJ later investigated for insider trading (no charges filed). Ethical line crossed regardless of legal outcome.</div>
+          <div><span class="timeline-fail" style="background:rgba(211,84,0,0.1);color:#d35400;">Failure: Self-interest over consumer protection</span></div>
+        </div>
+        <div class="timeline-item">
+          <div style="position:absolute;left:-24px;top:12px;width:10px;height:10px;border-radius:50%;background:#1a6b3c;border:2px solid white;"></div>
+          <div class="timeline-date">SEP 7, 2017</div>
+          <div class="timeline-event">Public Disclosure — 40 Days After Discovery</div>
+          <div class="timeline-desc">Equifax announces breach publicly. Consumer panic ensues. Credit freeze website crashes. CEO eventually resigns. Congressional hearings begin.</div>
+          <div><span class="timeline-fail" style="background:rgba(26,107,60,0.1);color:#1a6b3c;">Required: Disclosure within 72 hours of confirmation</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Behavioral-Ethical ERM Approach -->
+  <div class="card">
+    <div class="card-title">How a Behavioral-Ethical ERM Approach Could Have Changed Outcomes</div>
+    <div class="grid-3">
+      <div style="padding:14px;background:var(--cream);border-radius:3px;border-top:3px solid #1a3a5c;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:#1a3a5c;">De-bias Decision Processes</div>
+        <div style="font-size:11px;color:var(--gray);line-height:1.7;">Structured pre-mortems, red-team challenges, and mandated dissent roles would have surfaced normalcy bias and overconfidence in risk reviews. An assigned "Risk Devil's Advocate" in security meetings would have forced articulation of worst-case breach scenarios — making the threat concrete and personal, not statistical.</div>
+      </div>
+      <div style="padding:14px;background:var(--cream);border-radius:3px;border-top:3px solid #c0392b;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:#c0392b;">Assign Named Ownership</div>
+        <div style="font-size:11px;color:var(--gray);line-height:1.7;">Diffusion of responsibility is defeated by specificity. Every vulnerability above CVSS 7 should have had a named owner within 24 hours of identification, with a personal performance consequence for non-remediation. The distribution-list email model is a documented failure pattern in organizational psychology.</div>
+      </div>
+      <div style="padding:14px;background:var(--cream);border-radius:3px;border-top:3px solid #1a6b3c;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:#1a6b3c;">Embed Consumer Ethics in Risk Culture</div>
+        <div style="font-size:11px;color:var(--gray);line-height:1.7;">A behavioral-ethical ERM framework would have codified the stakeholder harm test: "If this risk materializes, who is harmed and how quickly must we tell them?" Pre-committed disclosure protocols — approved in advance by the board — remove the temptation to delay and make ethical behavior the path of least resistance rather than a discretionary choice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PART 9 — PERSONAL REFLECTION
+═══════════════════════════════════════════════════ -->
+<section id="p9" class="section">
+  <div class="section-header">
+    <span class="part-label">Part 9</span>
+    <h2>Personal Reflection</h2>
+    <span class="deliverable">Deliverable: 1–2 Page Reflection</span>
+  </div>
+
+  <div style="margin-bottom:14px;padding:12px 16px;background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.2);border-radius:3px;font-size:11px;color:var(--gray);font-style:italic;">
+    💡 <strong>Note for your submission:</strong> Part 9 is your personal voice — the sections below are structured prompts and example framing. Replace the italicized placeholder text with your own authentic reflection before submitting.
+  </div>
+
+  <!-- Q1 -->
+  <div class="reflection-block" style="margin-bottom:20px;">
+    <div class="reflection-q">What has this case taught you about risk leadership?</div>
+    <div class="reflection-text">
+      <em style="color:var(--gray);">[Write 2–3 paragraphs here. Consider: What does genuine risk leadership look like versus performative compliance? What is the difference between a risk manager and a risk leader? How does the Equifax case reframe your understanding of what it means to protect stakeholders?]</em>
+    </div>
+    <div class="reflection-prompt">
+      Framing prompt: The Equifax breach was not a failure of information — it was a failure of will, structure, and prioritization. Consider: what would a risk <em>leader</em> — not just a risk manager — have done differently at each stage?
+    </div>
+  </div>
+
+  <!-- Q2: Own Biases -->
+  <div class="reflection-block" style="margin-bottom:20px;">
+    <div class="reflection-q">Your own biases — what do you recognize in yourself?</div>
+    <div class="bias-self" style="margin-bottom:14px;">
+      <div class="bias-self-item" style="border-left-color:#c0392b;">
+        <div class="bs-name">Optimism / Overconfidence</div>
+        <div class="bs-text"><em style="color:var(--gray);">[Reflect: In what situations do you overestimate your team's readiness or underestimate risk likelihood? When have you assumed things were "probably fine"?]</em></div>
+      </div>
+      <div class="bias-self-item" style="border-left-color:#d35400;">
+        <div class="bs-name">Authority Bias</div>
+        <div class="bs-text"><em style="color:var(--gray);">[Reflect: Have you ever not raised a concern because a senior leader seemed unconcerned? What would it take for you to speak up against consensus?]</em></div>
+      </div>
+      <div class="bias-self-item" style="border-left-color:#2980b9;">
+        <div class="bs-name">Status Quo Bias</div>
+        <div class="bs-text"><em style="color:var(--gray);">[Reflect: When have you tolerated a known problem because changing it seemed harder than living with it? How does this mirror the patch backlog dynamic?]</em></div>
+      </div>
+      <div class="bias-self-item" style="border-left-color:#1a6b3c;">
+        <div class="bs-name">Sunk Cost Fallacy</div>
+        <div class="bs-text"><em style="color:var(--gray);">[Reflect: Have you continued investing in a failing control or process because of prior investment? How would you design a decision process that overcomes this?]</em></div>
+      </div>
+    </div>
+    <div class="reflection-text">
+      <em style="color:var(--gray);">[Add a paragraph synthesizing how awareness of your own biases would make you a more effective risk leader. Be specific and honest — this is the most memorable part of any reflection.]</em>
+    </div>
+  </div>
+
+  <!-- Q3: Lead Differently -->
+  <div class="reflection-block" style="margin-bottom:20px;">
+    <div class="reflection-q">How would you lead differently?</div>
+    <div class="reflection-text">
+      <em style="color:var(--gray);">[Write 3–5 concrete commitments. Not abstract values — specific behavioral changes. Examples of the format:]</em>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
+        <div style="font-size:11px;"><strong>Create forced dissent in every risk review.</strong> <em style="color:var(--gray);">[How? By whom? What would this look like at Equifax?]</em></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
+        <div style="font-size:11px;"><strong>Never let a critical risk sit without a named owner.</strong> <em style="color:var(--gray);">[What accountability system would you design?]</em></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
+        <div style="font-size:11px;"><strong>Pre-commit to disclosure timelines before a breach happens.</strong> <em style="color:var(--gray);">[Why is pre-commitment ethically important?]</em></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;">+</div>
+        <div style="font-size:11px;color:var(--gray);font-style:italic;">[Add your own commitments here — make them personal and specific to your leadership style]</div>
+      </div>
+    </div>
+    <div class="reflection-prompt">
+      Closing thought: The most powerful lesson of Equifax is not technical — it is human. Risks did not fail to be identified; they failed to be acted upon. Risk leadership is ultimately the practice of ensuring that what is known is also felt, owned, and resolved.
+    </div>
+  </div>
+
+  <div class="stamp">
+    <span>Equifax ERM Capstone — Part 9 Personal Reflection</span>
+    <span>Author: [Your Name] · Course: Enterprise Risk Management</span>
+    <span>Submission Draft</span>
+  </div>
+</section>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
