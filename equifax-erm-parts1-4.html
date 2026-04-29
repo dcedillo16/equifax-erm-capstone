@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equifax ERM — Parts 1–4</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --red: #e84040;
+    --red-dim: rgba(232,64,64,0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --blue: #4a9eff;
+    --blue-dim: rgba(74,158,255,0.12);
+    --green: #3ecf8e;
+    --green-dim: rgba(62,207,142,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid transparent;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active { color: var(--text); background: var(--surface2); border-color: var(--border); }
+  .nav-badge {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 18px;
+    text-align: center;
+    margin-right: 4px;
+  }
+
+  /* LAYOUT */
+  .page { display: none; padding: 28px; max-width: 1300px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .page-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .page-header .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .part-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* GRID */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+  .span2 { grid-column: span 2; }
+  .span3 { grid-column: span 3; }
+  .mb { margin-bottom: 18px; }
+
+  /* ── PART 1 — RISK IDENTIFICATION ── */
+
+  .risk-source {
+    border-left: 3px solid;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    background: var(--surface2);
+    margin-bottom: 10px;
+  }
+  .rs-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .rs-icon { font-size: 18px; }
+  .rs-title { font-weight: 700; font-size: 13px; }
+  .rs-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+  .rs-desc { font-size: 11px; color: var(--muted); line-height: 1.65; }
+  .rs-risks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .rs-risk-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+    font-weight: 600;
+  }
+
+  .risk-register {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .risk-register th {
+    background: var(--surface2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .risk-register td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    font-size: 11px;
+  }
+  .risk-register tr:last-child td { border-bottom: none; }
+  .risk-register tr:hover td { background: rgba(255,255,255,0.02); }
+  .risk-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .cat-badge {
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── PART 2 — ASSESSMENT ── */
+
+  .score-card {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .score-big {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .score-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .score-sub { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  .qual-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
+    margin-top: 8px;
+  }
+  .qual-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px;
+    font-weight: 700;
+  }
+  .qual-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: default;
+    transition: transform 0.1s;
+    color: rgba(255,255,255,0.85);
+    position: relative;
+  }
+  .qual-cell:hover { transform: scale(1.08); z-index: 5; }
+  .qual-cell .dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    color: white;
+    position: absolute;
+  }
+  .cell-low    { background: rgba(62,207,142,0.18); }
+  .cell-mod    { background: rgba(245,166,35,0.22); }
+  .cell-high   { background: rgba(232,64,64,0.25); }
+  .cell-crit   { background: rgba(232,64,64,0.55); }
+  .cell-empty  { background: var(--surface2); }
+  .y-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    font-weight: 700;
+  }
+
+  .quant-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .quant-row:last-child { border-bottom: none; }
+  .quant-name { flex: 1.2; font-weight: 600; font-size: 12px; }
+  .quant-bar-wrap {
+    flex: 2;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .quant-bar { height: 100%; border-radius: 4px; }
+  .quant-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    width: 80px;
+    text-align: right;
+  }
+  .quant-note { font-size: 10px; color: var(--muted); flex: 1.5; }
+
+  /* ── PART 3 — PRIORITIZATION ── */
+
+  .priority-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .priority-item:last-child { border-bottom: none; }
+  .pri-rank {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--border);
+    width: 36px;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .pri-content { flex: 1; }
+  .pri-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  .pri-desc { font-size: 11px; color: var(--muted); line-height: 1.6; margin-bottom: 6px; }
+  .pri-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pri-tag {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .pri-score {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .pri-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pri-denom { font-size: 10px; color: var(--muted); }
+  .pri-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  .velocity-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vel-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .vel-name { font-size: 11px; font-weight: 600; flex: 1; }
+  .vel-bar-wrap { flex: 2; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .vel-bar { height: 100%; border-radius: 3px; }
+  .vel-score { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; width: 24px; text-align: right; }
+  .vel-trend { font-size: 13px; width: 16px; text-align: center; }
+
+  /* ── PART 4 — TREATMENT ── */
+
+  .treatment-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    border-top: 3px solid;
+  }
+  .tc-risk { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .tc-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  .tc-strategy {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .tc-actions { list-style: none; }
+  .tc-actions li {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 4px 0;
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+  }
+  .tc-actions li:last-child { border-bottom: none; }
+  .tc-actions li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--border);
+    font-size: 10px;
+  }
+  .tc-footer {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tc-meta {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    background: var(--surface);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .timeline-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .ts-phase {
+    padding: 14px;
+    background: var(--surface2);
+  }
+  .ts-phase-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .ts-phase-time {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .ts-items { list-style: none; }
+  .ts-items li {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 3px 0;
+    padding-left: 10px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  .ts-items li:last-child { border-bottom: none; }
+  .ts-items li::before { content: '·'; position: absolute; left: 0; color: var(--muted); }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .ldot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  @media (max-width: 900px) {
+    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    .span2, .span3 { grid-column: span 1; }
+    nav { flex-wrap: wrap; height: auto; padding: 10px; gap: 8px; }
+    .nav-tabs { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    Equifax ERM Capstone
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="show('p1', this)">
+      <span class="nav-badge" style="background:rgba(232,64,64,0.2);color:#e84040;">1</span>Risk ID
+    </div>
+    <div class="nav-tab" onclick="show('p2', this)">
+      <span class="nav-badge" style="background:rgba(245,166,35,0.2);color:#f5a623;">2</span>Assessment
+    </div>
+    <div class="nav-tab" onclick="show('p3', this)">
+      <span class="nav-badge" style="background:rgba(74,158,255,0.2);color:#4a9eff;">3</span>Prioritization
+    </div>
+    <div class="nav-tab" onclick="show('p4', this)">
+      <span class="nav-badge" style="background:rgba(62,207,142,0.2);color:#3ecf8e;">4</span>Treatment
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     PART 1 — RISK IDENTIFICATION
+══════════════════════════════════════════════ -->
+<div id="p1" class="page active">
+  <div class="page-header">
+    <div>
+      <h2>Risk Identification</h2>
+      <div class="subtitle">Source-based risk mapping from the Equifax 2017 breach — all risks traced to documented failures</div>
+    </div>
+    <span class="part-tag" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(232,64,64,0.3);">Part 1</span>
+  </div>
+
+  <!-- 4 root cause sources -->
+  <div class="g2 mb">
+    <div>
+      <div class="risk-source" style="border-color:#e84040;">
+        <div class="rs-header">
+          <span class="rs-icon">🔓</span>
+          <span class="rs-title">Technical Vulnerabilities</span>
+          <span class="rs-category" style="background:var(--red-dim);color:var(--red);">Cyber</span>
+        </div>
+        <div class="rs-desc">Apache Struts CVE-2017-5638 left unpatched for 76 days despite US-CERT alert. Scanning tool failed to detect the exposed component. SSL certificate expired 10 months prior, blinding network monitoring to all suspicious traffic.</div>
+        <div class="rs-risks">
+          <span class="rs-risk-tag" style="border-color:rgba(232,64,64,0.4);color:#e84040;background:var(--red-dim);">R1 — Patch Failure</span>
+          <span class="rs-risk-tag" style="border-color:rgba(232,64,64,0.4);color:#e84040;background:var(--red-dim);">R2 — Monitoring Blind Spot</span>
+          <span class="rs-risk-tag" style="border-color:rgba(232,64,64,0.4);color:#e84040;background:var(--red-dim);">R3 — Lateral Movement</span>
+        </div>
+      </div>
+
+      <div class="risk-source" style="border-color:#f5a623;">
+        <div class="rs-header">
+          <span class="rs-icon">🏛️</span>
+          <span class="rs-title">Governance Failures</span>
+          <span class="rs-category" style="background:var(--amber-dim);color:var(--amber);">Governance</span>
+        </div>
+        <div class="rs-desc">CSO did not report directly to CEO — security lacked executive voice. No independent CRO function existed. Risk ownership was unclear across teams. Cybersecurity was chronically underfunded relative to the company's data custodianship role.</div>
+        <div class="rs-risks">
+          <span class="rs-risk-tag" style="border-color:rgba(245,166,35,0.4);color:#f5a623;background:var(--amber-dim);">R4 — Structural Accountability Gap</span>
+          <span class="rs-risk-tag" style="border-color:rgba(245,166,35,0.4);color:#f5a623;background:var(--amber-dim);">R5 — Underfunding</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="risk-source" style="border-color:#a78bfa;">
+        <div class="rs-header">
+          <span class="rs-icon">🧠</span>
+          <span class="rs-title">Cultural Issues</span>
+          <span class="rs-category" style="background:var(--purple-dim);color:var(--purple);">Culture</span>
+        </div>
+        <div class="rs-desc">Employees described a "firefighting" culture — reactive rather than proactive. Technical debt accumulated for years without strategic resolution. Risk silos prevented cross-functional awareness. Teams lacked psychological safety to escalate concerns upward.</div>
+        <div class="rs-risks">
+          <span class="rs-risk-tag" style="border-color:rgba(167,139,250,0.4);color:#a78bfa;background:var(--purple-dim);">R6 — Reactive Risk Culture</span>
+          <span class="rs-risk-tag" style="border-color:rgba(167,139,250,0.4);color:#a78bfa;background:var(--purple-dim);">R7 — Technical Debt</span>
+        </div>
+      </div>
+
+      <div class="risk-source" style="border-color:#4a9eff;">
+        <div class="rs-header">
+          <span class="rs-icon">📣</span>
+          <span class="rs-title">Communication Breakdowns</span>
+          <span class="rs-category" style="background:var(--blue-dim);color:var(--blue);">Operational</span>
+        </div>
+        <div class="rs-desc">Breach discovered July 29 but not disclosed until September 7 — a 40-day delay. Consumer response directed to a domain resembling a phishing site. Executives sold stock before public disclosure. Public messaging was inconsistent and lacked clarity.</div>
+        <div class="rs-risks">
+          <span class="rs-risk-tag" style="border-color:rgba(74,158,255,0.4);color:#4a9eff;background:var(--blue-dim);">R8 — Disclosure Delay</span>
+          <span class="rs-risk-tag" style="border-color:rgba(74,158,255,0.4);color:#4a9eff;background:var(--blue-dim);">R9 — Reputational Risk</span>
+          <span class="rs-risk-tag" style="border-color:rgba(74,158,255,0.4);color:#4a9eff;background:var(--blue-dim);">R10 — Insider Trading Risk</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Register -->
+  <div class="card">
+    <div class="card-label">Enterprise Risk Register — 10 Identified Risks</div>
+    <table class="risk-register">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Risk Name</th>
+          <th>Category</th>
+          <th>Root Cause (from case)</th>
+          <th>Potential Impact</th>
+          <th>Risk Owner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="risk-id">R1</span></td>
+          <td><strong>Unpatched Critical Vulnerability</strong></td>
+          <td><span class="cat-badge" style="background:var(--red-dim);color:#e84040;">Cyber</span></td>
+          <td>Apache Struts CVE unpatched 76 days; scanning tool missed it; no manual verification</td>
+          <td>Full system compromise; data exfiltration</td>
+          <td>CISO / IT Ops</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R2</span></td>
+          <td><strong>Network Monitoring Failure</strong></td>
+          <td><span class="cat-badge" style="background:var(--red-dim);color:#e84040;">Cyber</span></td>
+          <td>SSL certificate expired 10 months prior; monitoring system effectively blind</td>
+          <td>Undetected exfiltration for 76 days</td>
+          <td>CISO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R3</span></td>
+          <td><strong>Inadequate Network Segmentation</strong></td>
+          <td><span class="cat-badge" style="background:var(--red-dim);color:#e84040;">Cyber</span></td>
+          <td>Attackers moved laterally across network after initial compromise</td>
+          <td>Expanded breach scope; 147M records accessed</td>
+          <td>IT Architecture</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R4</span></td>
+          <td><strong>Governance Structure Gap</strong></td>
+          <td><span class="cat-badge" style="background:var(--amber-dim);color:#f5a623;">Governance</span></td>
+          <td>CSO did not report to CEO; no independent CRO; unclear risk ownership</td>
+          <td>Risk signals not reaching decision-makers</td>
+          <td>CEO / Board</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R5</span></td>
+          <td><strong>Cybersecurity Underfunding</strong></td>
+          <td><span class="cat-badge" style="background:var(--amber-dim);color:#f5a623;">Governance</span></td>
+          <td>Security budget insufficient for Equifax's role as custodian of 800M+ consumer records</td>
+          <td>Systemic control weakness across all cyber risks</td>
+          <td>CFO / CEO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R6</span></td>
+          <td><strong>Reactive Risk Culture</strong></td>
+          <td><span class="cat-badge" style="background:var(--purple-dim);color:#a78bfa;">Culture</span></td>
+          <td>"Firefighting" culture; teams reactive not proactive; risk escalation suppressed</td>
+          <td>Systemic inability to prevent foreseeable risks</td>
+          <td>CEO / CHRO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R7</span></td>
+          <td><strong>Accumulated Technical Debt</strong></td>
+          <td><span class="cat-badge" style="background:var(--purple-dim);color:#a78bfa;">Culture</span></td>
+          <td>Years of deferred maintenance and system modernization; aging infrastructure</td>
+          <td>Increased attack surface; reduced control effectiveness</td>
+          <td>CTO / CIO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R8</span></td>
+          <td><strong>Inadequate Incident Disclosure</strong></td>
+          <td><span class="cat-badge" style="background:var(--blue-dim);color:#4a9eff;">Operational</span></td>
+          <td>40-day delay between discovery and public disclosure; regulatory duties breached</td>
+          <td>Regulatory fines; loss of consumer trust; legal liability</td>
+          <td>Legal / CEO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R9</span></td>
+          <td><strong>Reputational & Consumer Harm</strong></td>
+          <td><span class="cat-badge" style="background:var(--blue-dim);color:#4a9eff;">Operational</span></td>
+          <td>Phishing-like response domain; confusing public messaging; $700M settlement</td>
+          <td>Long-term brand damage; customer attrition; revenue loss</td>
+          <td>CMO / CEO</td>
+        </tr>
+        <tr>
+          <td><span class="risk-id">R10</span></td>
+          <td><strong>Insider Trading / Ethics Risk</strong></td>
+          <td><span class="cat-badge" style="background:var(--blue-dim);color:#4a9eff;">Operational</span></td>
+          <td>Executives sold stock before public disclosure; DOJ investigation launched</td>
+          <td>Criminal exposure; governance credibility collapse</td>
+          <td>Board / General Counsel</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PART 2 — QUALITATIVE & QUANTITATIVE
+══════════════════════════════════════════════ -->
+<div id="p2" class="page">
+  <div class="page-header">
+    <div>
+      <h2>Qualitative & Quantitative Assessment</h2>
+      <div class="subtitle">Likelihood × Impact scoring + financial exposure estimates for all 10 identified risks</div>
+    </div>
+    <span class="part-tag" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,0.3);">Part 2</span>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="g4 mb">
+    <div class="score-card">
+      <div class="score-big" style="color:#e84040;">4</div>
+      <div class="score-label">Critical Risks (Score 20–25)</div>
+      <div class="score-sub">R1, R2, R3, R8</div>
+    </div>
+    <div class="score-card">
+      <div class="score-big" style="color:#f5a623;">4</div>
+      <div class="score-label">High Risks (Score 12–19)</div>
+      <div class="score-sub">R4, R5, R7, R9</div>
+    </div>
+    <div class="score-card">
+      <div class="score-big" style="color:#4a9eff;">2</div>
+      <div class="score-label">Moderate Risks (Score 6–11)</div>
+      <div class="score-sub">R6, R10</div>
+    </div>
+    <div class="score-card">
+      <div class="score-big" style="color:#3ecf8e;">$700M+</div>
+      <div class="score-label">Realized Financial Loss</div>
+      <div class="score-sub">Settlement + indirect costs</div>
+    </div>
+  </div>
+
+  <div class="g2 mb">
+    <!-- Heat Map -->
+    <div class="card">
+      <div class="card-label">Qualitative Heat Map — Likelihood (1–5) × Impact (1–5)</div>
+
+      <div style="display:flex;gap:6px;align-items:flex-start;margin-top:8px;">
+        <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;align-self:center;margin-right:4px;font-weight:700;">LIKELIHOOD →</div>
+
+        <div style="flex:1;">
+          <!-- Col headers -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div></div>
+            <div class="qual-header">1</div>
+            <div class="qual-header">2</div>
+            <div class="qual-header">3</div>
+            <div class="qual-header">4</div>
+            <div class="qual-header">5</div>
+          </div>
+
+          <!-- Row 5 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="y-label">5</div>
+            <div class="qual-cell cell-mod"></div>
+            <div class="qual-cell cell-high"></div>
+            <div class="qual-cell cell-crit" style="position:relative;"><div class="dot">R1</div></div>
+            <div class="qual-cell cell-crit" style="position:relative;"><div class="dot">R2</div></div>
+            <div class="qual-cell cell-crit"></div>
+          </div>
+          <!-- Row 4 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="y-label">4</div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-mod"></div>
+            <div class="qual-cell cell-high" style="position:relative;"><div class="dot">R8</div></div>
+            <div class="qual-cell cell-crit" style="position:relative;"><div class="dot">R3</div></div>
+            <div class="qual-cell cell-crit"></div>
+          </div>
+          <!-- Row 3 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="y-label">3</div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-mod"></div>
+            <div class="qual-cell cell-mod" style="position:relative;"><div class="dot">R6</div></div>
+            <div class="qual-cell cell-high" style="position:relative;"><div class="dot">R4</div></div>
+            <div class="qual-cell cell-high" style="position:relative;"><div class="dot">R9</div></div>
+          </div>
+          <!-- Row 2 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:3px;">
+            <div class="y-label">2</div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-mod" style="position:relative;"><div class="dot">R10</div></div>
+            <div class="qual-cell cell-high" style="position:relative;"><div class="dot">R5</div></div>
+            <div class="qual-cell cell-high" style="position:relative;"><div class="dot">R7</div></div>
+          </div>
+          <!-- Row 1 -->
+          <div style="display:grid;grid-template-columns:22px repeat(5,1fr);gap:3px;margin-bottom:6px;">
+            <div class="y-label">1</div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-low"></div>
+            <div class="qual-cell cell-mod"></div>
+            <div class="qual-cell cell-mod"></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-align:center;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">← IMPACT →</div>
+        </div>
+      </div>
+
+      <div class="legend" style="margin-top:12px;">
+        <div class="legend-item"><div class="ldot" style="background:rgba(62,207,142,0.25);"></div> Low (1–5)</div>
+        <div class="legend-item"><div class="ldot" style="background:rgba(245,166,35,0.3);"></div> Moderate (6–11)</div>
+        <div class="legend-item"><div class="ldot" style="background:rgba(232,64,64,0.3);"></div> High (12–19)</div>
+        <div class="legend-item"><div class="ldot" style="background:rgba(232,64,64,0.6);"></div> Critical (20–25)</div>
+      </div>
+    </div>
+
+    <!-- Qualitative Scoring Table -->
+    <div class="card">
+      <div class="card-label">Risk Scoring Table — L × I Matrix</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead>
+          <tr>
+            <th style="background:var(--surface2);padding:8px 10px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">Risk</th>
+            <th style="background:var(--surface2);padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">L</th>
+            <th style="background:var(--surface2);padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">I</th>
+            <th style="background:var(--surface2);padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">Score</th>
+            <th style="background:var(--surface2);padding:8px 10px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R1 Unpatched Vulnerability</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">5</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">5</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#e84040;">25</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--red-dim);color:#e84040;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Critical</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R2 Monitoring Failure</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">5</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#e84040;">20</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--red-dim);color:#e84040;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Critical</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R3 Network Segmentation</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#e84040;">16</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--red-dim);color:#e84040;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Critical</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R4 Governance Gap</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#f5a623;">12</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--amber-dim);color:#f5a623;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">High</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R5 Cybersecurity Underfunding</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">2</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#f5a623;">8</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--amber-dim);color:#f5a623;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">High</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R6 Reactive Risk Culture</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--muted);">9</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:rgba(122,120,144,0.15);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Moderate</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R7 Technical Debt</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">2</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">5</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#f5a623;">10</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--amber-dim);color:#f5a623;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">High</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R8 Disclosure Delay</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">4</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#e84040;">12</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--red-dim);color:#e84040;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Critical</span></td></tr>
+          <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;">R9 Reputational Harm</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">5</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:#f5a623;">15</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);"><span style="background:var(--amber-dim);color:#f5a623;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">High</span></td></tr>
+          <tr><td style="padding:8px 10px;font-weight:600;">R10 Insider Trading Risk</td><td style="padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">2</td><td style="padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;">3</td><td style="padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--muted);">6</td><td style="padding:8px 10px;"><span style="background:rgba(122,120,144,0.15);color:var(--muted);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">Moderate</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Quantitative / Financial -->
+  <div class="card">
+    <div class="card-label">Quantitative Assessment — Financial Exposure Estimates</div>
+    <div style="margin-bottom:12px;font-size:11px;color:var(--muted);">Based on realized outcomes ($700M+ settlement) and comparable breach cost benchmarks. ALE = Annualized Loss Expectancy.</div>
+    <div class="quant-row">
+      <div class="quant-name">R1 — Patch Failure</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:100%;background:#e84040;"></div></div>
+      <div class="quant-val" style="color:#e84040;">$400M+</div>
+      <div class="quant-note">Primary cause of breach; carries largest share of $700M settlement + breach costs</div>
+    </div>
+    <div class="quant-row">
+      <div class="quant-name">R2 — Monitoring Failure</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:85%;background:#e84040;"></div></div>
+      <div class="quant-val" style="color:#e84040;">$280M+</div>
+      <div class="quant-note">76 days undetected; each additional day expanded breach scope significantly</div>
+    </div>
+    <div class="quant-row">
+      <div class="quant-name">R9 — Reputational Harm</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:75%;background:#f5a623;"></div></div>
+      <div class="quant-val" style="color:#f5a623;">$200M+</div>
+      <div class="quant-note">Revenue loss, stock decline (~35%), credit monitoring service costs, consumer litigation</div>
+    </div>
+    <div class="quant-row">
+      <div class="quant-name">R8 — Disclosure Delay</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:45%;background:#f5a623;"></div></div>
+      <div class="quant-val" style="color:#f5a623;">$125M</div>
+      <div class="quant-note">FTC portion of settlement directly linked to inadequate notification to consumers</div>
+    </div>
+    <div class="quant-row">
+      <div class="quant-name">R3 — Lateral Movement</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:35%;background:#4a9eff;"></div></div>
+      <div class="quant-val" style="color:#4a9eff;">$90M</div>
+      <div class="quant-note">Expanded scope from initial entry point to 147M records via unsegmented network</div>
+    </div>
+    <div class="quant-row">
+      <div class="quant-name">R5 — Underfunding (ALE)</div>
+      <div class="quant-bar-wrap"><div class="quant-bar" style="width:20%;background:#3ecf8e;"></div></div>
+      <div class="quant-val" style="color:#3ecf8e;">~$50M</div>
+      <div class="quant-note">Estimated annual underinvestment vs. peers; root enabler of most downstream risks</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PART 3 — RISK EVALUATION & PRIORITIZATION
+══════════════════════════════════════════════ -->
+<div id="p3" class="page">
+  <div class="page-header">
+    <div>
+      <h2>Risk Evaluation & Prioritization</h2>
+      <div class="subtitle">Ranked risk portfolio with velocity, interconnection, and strategic priority assessment</div>
+    </div>
+    <span class="part-tag" style="background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,158,255,0.3);">Part 3</span>
+  </div>
+
+  <div class="g2 mb">
+    <!-- Priority Ranked List -->
+    <div class="card">
+      <div class="card-label">Risk Priority Ranking — Composite Score</div>
+
+      <div class="priority-item">
+        <div class="pri-rank">1</div>
+        <div class="pri-content">
+          <div class="pri-title" style="color:#e84040;">Unpatched Critical Vulnerability (R1)</div>
+          <div class="pri-desc">The direct entry point for attackers. Apache Struts CVE known, alerted, and missed through two control failures — scanning and manual verification. Highest likelihood + highest impact. Immediate action required.</div>
+          <div class="pri-tags">
+            <span class="pri-tag" style="background:var(--red-dim);color:#e84040;">Score 25</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Cyber</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Root Cause</span>
+          </div>
+        </div>
+        <div class="pri-score">
+          <div class="pri-num" style="color:#e84040;">25</div>
+          <div class="pri-denom">/25</div>
+          <div class="pri-label" style="color:#e84040;">Critical</div>
+        </div>
+      </div>
+
+      <div class="priority-item">
+        <div class="pri-rank">2</div>
+        <div class="pri-content">
+          <div class="pri-title" style="color:#e84040;">Network Monitoring Failure (R2)</div>
+          <div class="pri-desc">An expired SSL certificate disabled all traffic inspection for 10 months. This single control failure extended the breach from days to 76 days, exponentially increasing data loss volume.</div>
+          <div class="pri-tags">
+            <span class="pri-tag" style="background:var(--red-dim);color:#e84040;">Score 20</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Cyber</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Amplifier</span>
+          </div>
+        </div>
+        <div class="pri-score">
+          <div class="pri-num" style="color:#e84040;">20</div>
+          <div class="pri-denom">/25</div>
+          <div class="pri-label" style="color:#e84040;">Critical</div>
+        </div>
+      </div>
+
+      <div class="priority-item">
+        <div class="pri-rank">3</div>
+        <div class="pri-content">
+          <div class="pri-title" style="color:#f5a623;">Reputational & Consumer Harm (R9)</div>
+          <div class="pri-desc">Long-term franchise risk. The phishing-like response site, inconsistent messaging, and executive stock sales compounded consumer harm beyond the breach itself. Reputational damage affects revenue for years.</div>
+          <div class="pri-tags">
+            <span class="pri-tag" style="background:var(--amber-dim);color:#f5a623;">Score 15</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Operational</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Strategic</span>
+          </div>
+        </div>
+        <div class="pri-score">
+          <div class="pri-num" style="color:#f5a623;">15</div>
+          <div class="pri-denom">/25</div>
+          <div class="pri-label" style="color:#f5a623;">High</div>
+        </div>
+      </div>
+
+      <div class="priority-item">
+        <div class="pri-rank">4</div>
+        <div class="pri-content">
+          <div class="pri-title" style="color:#e84040;">Network Segmentation Failure (R3)</div>
+          <div class="pri-desc">Lateral movement across unsegmented systems transformed a contained breach into a 147M-record catastrophe. Segmentation is the foundational containment control that was absent.</div>
+          <div class="pri-tags">
+            <span class="pri-tag" style="background:var(--red-dim);color:#e84040;">Score 16</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Cyber</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Containment</span>
+          </div>
+        </div>
+        <div class="pri-score">
+          <div class="pri-num" style="color:#e84040;">16</div>
+          <div class="pri-denom">/25</div>
+          <div class="pri-label" style="color:#e84040;">Critical</div>
+        </div>
+      </div>
+
+      <div class="priority-item">
+        <div class="pri-rank">5</div>
+        <div class="pri-content">
+          <div class="pri-title" style="color:#e84040;">Disclosure & Incident Response Failure (R8)</div>
+          <div class="pri-desc">The 40-day delay between discovery and disclosure violated regulatory obligations and consumer trust. Pre-committed disclosure protocols did not exist, leaving the decision vulnerable to self-interest.</div>
+          <div class="pri-tags">
+            <span class="pri-tag" style="background:var(--red-dim);color:#e84040;">Score 12</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Operational</span>
+            <span class="pri-tag" style="background:var(--surface2);color:var(--muted);">Regulatory</span>
+          </div>
+        </div>
+        <div class="pri-score">
+          <div class="pri-num" style="color:#e84040;">12</div>
+          <div class="pri-denom">/25</div>
+          <div class="pri-label" style="color:#e84040;">Critical</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <!-- Risk Velocity -->
+      <div class="card">
+        <div class="card-label">Risk Velocity — Speed of Impact Onset</div>
+        <div class="velocity-meter">
+          <div class="vel-item">
+            <div class="vel-name">R1 — Patch Failure</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:100%;background:#e84040;"></div></div>
+            <div class="vel-score" style="color:#e84040;">5</div>
+            <div class="vel-trend">🔴</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R2 — Monitoring Blind</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:90%;background:#e84040;"></div></div>
+            <div class="vel-score" style="color:#e84040;">5</div>
+            <div class="vel-trend">🔴</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R8 — Disclosure Delay</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:75%;background:#f5a623;"></div></div>
+            <div class="vel-score" style="color:#f5a623;">4</div>
+            <div class="vel-trend">🟠</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R3 — Lateral Movement</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:70%;background:#f5a623;"></div></div>
+            <div class="vel-score" style="color:#f5a623;">4</div>
+            <div class="vel-trend">🟠</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R9 — Reputational</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:55%;background:#f5a623;"></div></div>
+            <div class="vel-score" style="color:#f5a623;">3</div>
+            <div class="vel-trend">🟠</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R4 — Governance Gap</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:40%;background:#4a9eff;"></div></div>
+            <div class="vel-score" style="color:#4a9eff;">2</div>
+            <div class="vel-trend">🔵</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R5 — Underfunding</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:30%;background:#4a9eff;"></div></div>
+            <div class="vel-score" style="color:#4a9eff;">2</div>
+            <div class="vel-trend">🔵</div>
+          </div>
+          <div class="vel-item">
+            <div class="vel-name">R6 — Risk Culture</div>
+            <div class="vel-bar-wrap"><div class="vel-bar" style="width:20%;background:#3ecf8e;"></div></div>
+            <div class="vel-score" style="color:#3ecf8e;">1</div>
+            <div class="vel-trend">🟢</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic;">Velocity = speed from risk event to material impact (1=slow/years, 5=immediate/hours)</div>
+      </div>
+
+      <!-- Risk Interconnection -->
+      <div class="card">
+        <div class="card-label">Risk Interconnection — Cascade Map</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">How risks triggered and amplified each other in sequence</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:var(--red-dim);color:#e84040;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R5 Underfunding</span>
+            <span style="color:var(--muted);font-size:12px;">→</span>
+            <span style="background:var(--red-dim);color:#e84040;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R4 Governance Gap</span>
+            <span style="color:var(--muted);font-size:12px;">→</span>
+            <span style="background:var(--red-dim);color:#e84040;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R6 Culture</span>
+          </div>
+          <div style="padding-left:20px;color:var(--muted);font-size:20px;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:var(--red-dim);color:#e84040;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R1 Patch Failure</span>
+            <span style="color:var(--muted);font-size:12px;">+</span>
+            <span style="background:var(--red-dim);color:#e84040;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R2 Monitoring Blind</span>
+          </div>
+          <div style="padding-left:20px;color:var(--muted);font-size:20px;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:rgba(232,64,64,0.5);color:white;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">BREACH + R3 Lateral</span>
+            <span style="color:var(--muted);font-size:12px;">→</span>
+            <span style="background:var(--amber-dim);color:#f5a623;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">147M Records</span>
+          </div>
+          <div style="padding-left:20px;color:var(--muted);font-size:20px;">↓</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:var(--blue-dim);color:#4a9eff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R8 Delay</span>
+            <span style="color:var(--muted);font-size:12px;">→</span>
+            <span style="background:var(--blue-dim);color:#4a9eff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R9 Reputation</span>
+            <span style="color:var(--muted);font-size:12px;">→</span>
+            <span style="background:var(--blue-dim);color:#4a9eff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;">R10 Ethics</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PART 4 — RISK TREATMENT PLAN
+══════════════════════════════════════════════ -->
+<div id="p4" class="page">
+  <div class="page-header">
+    <div>
+      <h2>Risk Treatment Plan</h2>
+      <div class="subtitle">Mitigation strategies, controls, owners, and implementation timeline for top risks</div>
+    </div>
+    <span class="part-tag" style="background:var(--green-dim);color:var(--green);border:1px solid rgba(62,207,142,0.3);">Part 4</span>
+  </div>
+
+  <!-- Treatment Strategy Legend -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:4px;background:var(--red-dim);color:#e84040;font-weight:700;">MITIGATE — Reduce likelihood/impact</span>
+    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:4px;background:var(--blue-dim);color:#4a9eff;font-weight:700;">TRANSFER — Insurance / contractual shift</span>
+    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:4px;background:var(--amber-dim);color:#f5a623;font-weight:700;">AVOID — Restructure to eliminate risk</span>
+    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:4px;background:var(--green-dim);color:#3ecf8e;font-weight:700;">ACCEPT — Monitor with residual tolerance</span>
+  </div>
+
+  <div class="g2 mb">
+    <div class="treatment-card" style="border-top-color:#e84040;">
+      <div class="tc-risk">R1 · Cyber · Score 25</div>
+      <div class="tc-title">Unpatched Critical Vulnerability</div>
+      <span class="tc-strategy" style="background:var(--red-dim);color:#e84040;">MITIGATE</span>
+      <ul class="tc-actions">
+        <li>Mandate 30-day SLA for all CVSS ≥7.0 vulnerabilities with named owner assigned within 24 hours</li>
+        <li>Implement automated patch management platform (Qualys, Rapid7) with real-time compliance dashboards</li>
+        <li>Require manual verification of all scanner results for critical systems — eliminate single-tool reliance</li>
+        <li>Establish weekly patch review cadence with CISO sign-off on any overdue critical CVEs</li>
+        <li>Conduct quarterly red team exercises to validate patch controls are effective in production</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: CISO / IT Ops</span>
+        <span class="tc-meta">Timeline: 0–60 days</span>
+        <span class="tc-meta">Target Score: ≤8</span>
+      </div>
+    </div>
+
+    <div class="treatment-card" style="border-top-color:#e84040;">
+      <div class="tc-risk">R2 · Cyber · Score 20</div>
+      <div class="tc-title">Network Monitoring Failure</div>
+      <span class="tc-strategy" style="background:var(--red-dim);color:#e84040;">MITIGATE</span>
+      <ul class="tc-actions">
+        <li>Deploy automated SSL/TLS certificate inventory with 30/60/90-day expiry alerts; no manual renewal reliance</li>
+        <li>Implement full SIEM platform with 24/7 SOC monitoring; enable SSL inspection on all internal traffic</li>
+        <li>Establish anomalous egress traffic alerts — flag large or unusual data transfers within 1 hour</li>
+        <li>Require monthly audit of all monitoring tool health and certificate validity chain</li>
+        <li>Set mean-time-to-detect KRI target of ≤24 hours for critical security events</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: CISO</span>
+        <span class="tc-meta">Timeline: 0–45 days</span>
+        <span class="tc-meta">Target Score: ≤6</span>
+      </div>
+    </div>
+
+    <div class="treatment-card" style="border-top-color:#e84040;">
+      <div class="tc-risk">R3 · Cyber · Score 16</div>
+      <div class="tc-title">Network Segmentation Failure</div>
+      <span class="tc-strategy" style="background:var(--red-dim);color:#e84040;">MITIGATE</span>
+      <ul class="tc-actions">
+        <li>Implement Zero Trust Architecture — no implicit trust between network zones; verify every connection</li>
+        <li>Segment all PII-bearing systems into isolated VLANs with strict least-privilege access controls</li>
+        <li>Deploy micro-segmentation for database tier; limit lateral movement radius to single application</li>
+        <li>Conduct annual penetration tests specifically targeting lateral movement scenarios</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: IT Architecture</span>
+        <span class="tc-meta">Timeline: 60–180 days</span>
+        <span class="tc-meta">Target Score: ≤8</span>
+      </div>
+    </div>
+
+    <div class="treatment-card" style="border-top-color:#f5a623;">
+      <div class="tc-risk">R4 · Governance · Score 12</div>
+      <div class="tc-title">Governance Structure Gap</div>
+      <span class="tc-strategy" style="background:var(--amber-dim);color:#f5a623;">AVOID</span>
+      <ul class="tc-actions">
+        <li>Create independent CRO role reporting directly to CEO and Board Risk Committee</li>
+        <li>Elevate CISO to C-suite with direct board access; include in all executive strategy discussions</li>
+        <li>Establish Board Risk Committee with quarterly reporting cadence and mandatory cyber risk agenda item</li>
+        <li>Define and publish RACI for all enterprise risk activities; review annually</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: CEO / Board</span>
+        <span class="tc-meta">Timeline: 0–60 days</span>
+        <span class="tc-meta">Target Score: ≤4</span>
+      </div>
+    </div>
+
+    <div class="treatment-card" style="border-top-color:#4a9eff;">
+      <div class="tc-risk">R8 · Operational · Score 12</div>
+      <div class="tc-title">Disclosure & Incident Response Failure</div>
+      <span class="tc-strategy" style="background:var(--blue-dim);color:#4a9eff;">MITIGATE + AVOID</span>
+      <ul class="tc-actions">
+        <li>Pre-approve board-level disclosure protocols: breach confirmed → public notification within 72 hours</li>
+        <li>Establish dedicated incident response team with external forensics firm on retainer</li>
+        <li>Conduct annual tabletop breach simulation exercises including executive and board participants</li>
+        <li>Ban stock transactions for all executives from the moment any security incident is declared</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: Legal / CEO</span>
+        <span class="tc-meta">Timeline: 30–90 days</span>
+        <span class="tc-meta">Target Score: ≤4</span>
+      </div>
+    </div>
+
+    <div class="treatment-card" style="border-top-color:#f5a623;">
+      <div class="tc-risk">R5 + R7 · Governance + Culture · Score 8–10</div>
+      <div class="tc-title">Underfunding & Technical Debt</div>
+      <span class="tc-strategy" style="background:var(--amber-dim);color:#f5a623;">MITIGATE</span>
+      <ul class="tc-actions">
+        <li>Benchmark cybersecurity spend vs. financial sector peers; increase budget to ≥6% of IT spend</li>
+        <li>Establish 3-year technical debt reduction roadmap with milestone-based funding tied to risk reduction</li>
+        <li>Link executive compensation to ERM KPIs — security risk metrics included in bonus calculations</li>
+        <li>Shift from annual to continuous risk assessment cycle; integrate risk into strategic planning process</li>
+      </ul>
+      <div class="tc-footer">
+        <span class="tc-meta">Owner: CFO / CEO</span>
+        <span class="tc-meta">Timeline: 0–12 months</span>
+        <span class="tc-meta">Target Score: ≤4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Implementation Timeline -->
+  <div class="card">
+    <div class="card-label">Implementation Timeline — Phased Treatment Plan</div>
+    <div class="timeline-strip">
+      <div class="ts-phase" style="border-left:3px solid #e84040;">
+        <div class="ts-phase-label" style="color:#e84040;">Phase 1 — Immediate</div>
+        <div class="ts-phase-time">Days 0–30</div>
+        <ul class="ts-items">
+          <li>Assign CISO to C-suite; board briefing scheduled</li>
+          <li>Emergency patch audit — all CVSS ≥7 systems</li>
+          <li>Certificate inventory audit launched</li>
+          <li>Insider trading blackout policy enacted</li>
+          <li>Draft disclosure protocol for board approval</li>
+        </ul>
+      </div>
+      <div class="ts-phase" style="border-left:3px solid #f5a623;">
+        <div class="ts-phase-label" style="color:#f5a623;">Phase 2 — Short-Term</div>
+        <div class="ts-phase-time">Days 31–90</div>
+        <ul class="ts-items">
+          <li>CRO appointed; Risk Committee charter approved</li>
+          <li>SIEM platform deployed; SSL inspection active</li>
+          <li>Patch management platform live</li>
+          <li>Incident response retainer signed</li>
+          <li>RACI published enterprise-wide</li>
+        </ul>
+      </div>
+      <div class="ts-phase" style="border-left:3px solid #4a9eff;">
+        <div class="ts-phase-label" style="color:#4a9eff;">Phase 3 — Medium-Term</div>
+        <div class="ts-phase-time">Days 91–180</div>
+        <ul class="ts-items">
+          <li>Network segmentation / Zero Trust rollout</li>
+          <li>Executive risk dashboard operational</li>
+          <li>Tabletop breach simulation conducted</li>
+          <li>PII data inventory completed</li>
+          <li>Vendor risk assessments underway</li>
+        </ul>
+      </div>
+      <div class="ts-phase" style="border-left:3px solid #3ecf8e;">
+        <div class="ts-phase-label" style="color:#3ecf8e;">Phase 4 — Long-Term</div>
+        <div class="ts-phase-time">Days 181–365</div>
+        <ul class="ts-items">
+          <li>ERM maturity reassessment completed</li>
+          <li>Risk KPIs embedded in exec compensation</li>
+          <li>Annual penetration test completed</li>
+          <li>3-year tech debt roadmap finalized</li>
+          <li>Risk culture program sustained</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>
